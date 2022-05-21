@@ -6,7 +6,7 @@ if (!customElements.get('quick-add-modal')) {
     }
 
     hide(preventFocus = false) {
-      const cartNotification = document.querySelector('cart-notification');
+      const cartNotification = document.querySelector('cart-notification') || document.querySelector('cart-drawer');
       if (cartNotification) cartNotification.setActiveElement(this.openedBy);
       this.modalContent.innerHTML = '';
       
