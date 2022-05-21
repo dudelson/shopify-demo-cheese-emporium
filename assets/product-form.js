@@ -8,7 +8,7 @@ if (!customElements.get('product-form')) {
       this.form.addEventListener('submit', this.onSubmitHandler.bind(this));
       this.cart = document.querySelector('cart-notification') || document.querySelector('cart-drawer');
       this.submitButton = this.querySelector('[type="submit"]');
-      if (document.querySelector('cart-drawer') this.submitButton.setAttribute('aria-haspopup', 'dialog');
+      if (document.querySelector('cart-drawer')) this.submitButton.setAttribute('aria-haspopup', 'dialog');
     }
 
     onSubmitHandler(evt) {
@@ -16,7 +16,6 @@ if (!customElements.get('product-form')) {
       if (this.submitButton.getAttribute('aria-disabled') === 'true') return;
 
       this.handleErrorMessage();
-      this.cartNotification.setActiveElement(document.activeElement);
 
       this.submitButton.setAttribute('aria-disabled', true);
       this.submitButton.classList.add('loading');
@@ -27,8 +26,11 @@ if (!customElements.get('product-form')) {
       delete config.headers['Content-Type'];
 
       const formData = new FormData(this.form);
-      formData.append('sections', this.cartNotification.getSectionsToRender().map((section) => section.id));
-      formData.append('sections_url', window.location.pathname);
+      if (this.dataset.cartType != 'page') {
+        formData.append('sections', this.cart.getSectionsToRender().map((section) => section.id));
+        formData.append('sections_url', window.location.pathname);
+        this.cart.setActiveElement(document.activeElement);
+      }
       config.body = formData;
 
       fetch(`${routes.cart_add_url}`, config)
@@ -44,17 +46,20 @@ if (!customElements.get('product-form')) {
             soldOutMessage.classList.remove('hidden');
             this.error = true;
             return;
+          } else if (this.dataset.cartType == 'page') {
+            window.location = window.routes.cart_url;
+            return;
           }
 
           this.error = false;
           const quickAddModal = this.closest('quick-add-modal');
           if (quickAddModal) {
             document.body.addEventListener('modalClosed', () => {
-              setTimeout(() => { this.cartNotification.renderContents(response) });
+              setTimeout(() => { this.cart.renderContents(response) });
             }, { once: true });
             quickAddModal.hide(true);
           } else {
-            this.cartNotification.renderContents(response);
+            this.cart.renderContents(response);
           }
         })
         .catch((e) => {
@@ -62,6 +67,7 @@ if (!customElements.get('product-form')) {
         })
         .finally(() => {
           this.submitButton.classList.remove('loading');
+          if (this.cart && this.cart.classList.contains('is-empty')) this.cart.classList.remove('is-empty');
           if (!this.error) this.submitButton.removeAttribute('aria-disabled');
           this.querySelector('.loading-overlay__spinner').classList.add('hidden');
         });
